@@ -73,13 +73,13 @@ ALWAYS write tests first, then implement code to make tests pass.
 
 Do not assume `npm test`. The commands in the steps and examples below use `<test>`, `<test-watch>`, and `<coverage>` as placeholders for the project's actual runner. Resolve them once before starting:
 
-1. **Run the package-manager detector** (ships with ECC):
+1. **Resolve the package manager from the project under test.** For tests that need a JavaScript package manager, honor ECC's `CLAUDE_PACKAGE_MANAGER` override if it is already set to `npm`, `pnpm`, `yarn`, or `bun` in the current environment. It takes precedence over repository signals. Report the override and any disagreement with the project's pinned manager before running tests.
 
-   ```bash
-   node scripts/setup-package-manager.js --detect
-   ```
+   Otherwise, inspect the target package and its workspace root. Use the repository's documented choice or the `packageManager` field. If neither is available, use the lockfile for that workspace. Resolve conflicting repository signals before running tests.
 
-   It resolves the package manager (npm / pnpm / yarn / bun) from, in order: `CLAUDE_PACKAGE_MANAGER`, `.claude/package-manager.json`, the `package.json` `packageManager` field, the lockfile, then global config.
+   If a test command requires a JavaScript package manager and no signal identifies one, ask which manager to use and report that command as blocked until the choice is confirmed. When no JavaScript package manager is needed, use the project's documented test commands directly.
+
+   Confirm that the selected manager is already available. If it is missing or would be downloaded by a shim, report the prerequisite and use the repository's pinned setup only when installation is authorized.
 
 2. **Distinguish the package manager from the test runner — they are not the same.** A project can use Bun to install dependencies yet still run Jest or Vitest. Inspect `package.json` `scripts.test` and the test files:
    - `scripts.test` invokes `jest` / `vitest` -> run through the detected PM (`npm test`, `pnpm test`, `yarn test`, or `bun run test`).
